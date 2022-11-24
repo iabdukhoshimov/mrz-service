@@ -1,0 +1,31 @@
+services:
+  - name: gitlab
+    alias: docker
+    
+variables:
+  NAMESPACE: "default"
+
+before_script:
+  ## docker login
+  - docker login $CI_REGISTRY --username $CI_REGISTRY_USER --password $CI_REGISTRY_PASSWORD
+  ## install dependencies
+  - apk update && apk --no-cache --update add build-base openssh curl
+
+stages:
+  - build
+  - deploy
+
+build_image_prod:
+  stage: build
+  script:
+    - make build-image TAG=$CI_PIPELINE_IID PROJECT_NAME=$CI_PROJECT_NAMESPACE REGISTRY=$CI_REGISTRY
+    - make push-image TAG=$CI_PIPELINE_IID PROJECT_NAME=$CI_PROJECT_NAMESPACE REGISTRY=$CI_REGISTRY
+  only:
+    - master
+
+deploy_to_prod:
+  stage: deploy
+  script: gitlab
+  only:
+    - master
+
